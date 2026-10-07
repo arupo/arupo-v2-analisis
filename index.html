@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Diagnóstico Arupo v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column with a sticky section index on wide screens; tables and diagrams scroll inside their own boxes. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1b2230;
+  --muted: #5a6476;
+  --line: #dde1e8;
+  --accent: #1f4e79;
+  --accent-soft: #e6eef6;
+  --crit: #b42318;
+  --crit-soft: #fdecea;
+  --high: #b54708;
+  --high-soft: #fef3e6;
+  --med: #6b5d00;
+  --med-soft: #fbf6d9;
+  --ok: #1d6b45;
+  --ok-soft: #e7f4ec;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa4b5; --line: #2c3442;
+    --accent: #8db8e3; --accent-soft: #1d2b3b;
+    --crit: #f2867b; --crit-soft: #3a1d1b; --high: #f5a86a; --high-soft: #3a2817;
+    --med: #e2cf63; --med-soft: #33300f; --ok: #7fd1a3; --ok-soft: #173326;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa4b5; --line: #2c3442;
+  --accent: #8db8e3; --accent-soft: #1d2b3b;
+  --crit: #f2867b; --crit-soft: #3a1d1b; --high: #f5a86a; --high-soft: #3a2817;
+  --med: #e2cf63; --med-soft: #33300f; --ok: #7fd1a3; --ok-soft: #173326;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--body); padding: 0 16px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+nav.toc a { color: var(--muted); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
+main { min-width: 0; display: flex; flex-direction: column; gap: 48px; }
+header.top { display: flex; flex-direction: column; gap: 10px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 40px/1.15 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 28px/1.2 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 600 16px/1.3 var(--body); margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); font-size: 16px; }
+section { display: flex; flex-direction: column; gap: 18px; scroll-margin-top: 24px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 12px/1 var(--mono); padding: 6px 9px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
+code, .mono { font-family: var(--mono); font-size: 13px; }
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; overflow-x: auto; }
+.diagram pre.mermaid { margin: 0; background: transparent; }
+.note { font-size: 13px; color: var(--muted); }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 12px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+.sev { display: inline-block; font: 600 11px/1 var(--mono); padding: 4px 7px; border-radius: 3px; letter-spacing: .04em; white-space: nowrap; }
+.sev.crit { background: var(--crit-soft); color: var(--crit); }
+.sev.high { background: var(--high-soft); color: var(--high); }
+.sev.med { background: var(--med-soft); color: var(--med); }
+.sev.ok { background: var(--ok-soft); color: var(--ok); }
+.list { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.panel ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.alert { border-left: 3px solid var(--crit); background: var(--crit-soft); padding: 14px 16px; border-radius: 0 6px 6px 0; display: flex; flex-direction: column; gap: 6px; }
+.alert strong { color: var(--crit); }
+.phase { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); }
+.phase:first-child { border-top: 0; padding-top: 0; }
+.phase .tag { font: 600 13px/1 var(--mono); color: var(--accent); padding-top: 3px; }
+.phase ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 860px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 24px 64px; }
+  nav.toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px 14px; }
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
+  h1 { font-size: 32px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" aria-label="Secciones">
+    <span class="eyebrow">Contenido</span>
+    <a href="#resumen">Resumen</a>
+    <a href="#aws">Arquitectura AWS</a>
+    <a href="#flujo">Flujo de generación</a>
+    <a href="#producto">Mapa de producto</a>
+    <a href="#deficiencias">Deficiencias</a>
+    <a href="#conservar">Qué conservar</a>
+    <a href="#mercado">Competencia</a>
+    <a href="#pilares">8 pilares v2</a>
+    <a href="#opensource">Open source</a>
+    <a href="#rumbo">Rumbo propuesto</a>
+    <a href="#preguntas">Decisiones abiertas</a>
+  </nav>
+
+  <main>
+    <header class="top">
+      <span class="eyebrow">Análisis base · 7 oct 2026</span>
+      <h1>Diagnóstico de Arupo v1 y rumbo para la nueva versión</h1>
+      <p class="lede">Estado real de las ramas principales, deficiencias de código y procesos, competencia y piezas open source reutilizables. La firma electrónica y arupo-ai-poc quedan fuera: son pruebas de concepto bloqueadas.</p>
+      <div class="meta">
+        <span class="chip">arupo-backend main · 46989eb</span>
+        <span class="chip">arupo-frontend main · 16b55b1</span>
+        <span class="chip">legal-document-backend master · 83d366a</span>
+        <span class="chip">access_addin main · 6a092f4</span>
+      </div>
+      <p class="note">Las ramas se leyeron tal como estaban en local (sin <code>git fetch</code>; coinciden con origin al 30 jun 2026). Lo marcado "según docs" viene del inventario AWS archivado y falta confirmarlo contra la cuenta.</p>
+    </header>
+
+    <section id="resumen">
+      <h2>Resumen</h2>
+      <div class="alert">
+        <strong>Se identificaron riesgos de seguridad críticos en la versión actual.</strong>
+        <p>Su corrección es la fase F0 y va antes que la nueva versión. El detalle técnico está en un documento privado para socios.</p>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <h3>Qué es Arupo hoy</h3>
+          <ul>
+            <li>El abogado arma un cuestionario (~15 tipos de bloque) y le asocia una plantilla Word o Markdown.</li>
+            <li>Comparte un link; el cliente final responde sin registrarse y descarga el DOCX/PDF.</li>
+            <li>Add-in de Word que inserta etiquetas de plantilla (variables, condiciones, cálculos, bucles).</li>
+            <li>Suscripciones con Datafast, facturación SRI con Datil, correo con Postmark.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Lo que falta para ser gestión documental</h3>
+          <ul>
+            <li>Las respuestas del cliente no se guardan: no se puede regenerar ni auditar un documento.</li>
+            <li>Los documentos generados solo quedan como nombres de archivo y links que expiran.</li>
+            <li>No hay búsqueda, metadatos, vencimientos, versiones ni IA.</li>
+            <li>El bloque de pago del cuestionario del cliente es un campo de texto vacío.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="aws">
+      <h2>Arquitectura AWS actual</h2>
+      <p>Región us-east-2 (Ohio). Todo se desplegó a mano o con Elastic Beanstalk; no existe infraestructura como código en ningún repo.</p>
+      <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  U["Abogado / Cliente final<br/>navegador"]
+  W["Word + Add-in"]
+  subgraph AWS["AWS us-east-2"]
+    CF1["CloudFront<br/>web"]
+    S3W["S3<br/>SPA + add-in"]
+    ALB1["ALB<br/>API"]
+    EB1["Elastic Beanstalk<br/>Node/Express · 1 instancia"]
+    CF2["CloudFront<br/>API documentos"]
+    ALB2["ALB<br/>documentos"]
+    EB2["Elastic Beanstalk Docker<br/>Flask + LibreOffice · 1 instancia"]
+    RDS[("RDS Postgres<br/>single-AZ")]
+    RED[("ElastiCache Redis<br/>sesiones")]
+    S3D["S3<br/>plantillas y generados"]
+    S3I["S3 imágenes<br/>+ CloudFront"]
+  end
+  RW["Railway<br/>backend + DB staging"]
+  DF["Datafast<br/>pagos"]
+  DT["Datil<br/>factura SRI"]
+  PM["Postmark<br/>email"]
+  GH["GitHub Actions<br/>push a main = deploy"]
+
+  U --> CF1 --> S3W
+  W --> CF1
+  U --> ALB1 --> EB1
+  W --> ALB1
+  EB1 --> RDS
+  EB1 --> RED
+  EB1 -->|"genera documento"| CF2 --> ALB2 --> EB2
+  EB2 --> S3D
+  EB1 -->|"presigned 90s"| S3D
+  EB1 --> S3I
+  U -.->|"descarga directa"| S3D
+  EB1 --> DF
+  EB1 --> DT
+  EB1 --> PM
+  GH -.->|"deploy"| EB1
+  GH -.-> EB2
+  GH -.-> S3W
+</pre>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>Componente</th><th>Estado</th><th>Fuente</th></tr></thead>
+        <tbody>
+          <tr><td>Backend Node en EB, 1 instancia</td><td>Sin redundancia; el cron de cobros corre dentro de la app</td><td>Código + docs</td></tr>
+          <tr><td>Servicio de documentos Flask en EB Docker</td><td>Ubuntu 18.04 / Python 3.6, sin soporte; imagen se construye en la instancia al desplegar (10–15 min)</td><td>Código</td></tr>
+          <tr><td>RDS Postgres</td><td>Una sola zona de disponibilidad; configuración de red y backups a reforzar</td><td>Docs</td></tr>
+          <tr><td>Configuración de red y credenciales</td><td>Se gestionan a mano; a reforzar en F0 y F1</td><td>Código + docs</td></tr>
+          <tr><td>Staging</td><td>Backend y DB en otro proveedor; ambientes de staging en AWS apagados; recursos ociosos</td><td>Docs</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="flujo">
+      <h2>Flujo de generación de un documento</h2>
+      <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant C as Cliente final
+  participant FE as Web
+  participant BE as Backend Node
+  participant DB as Postgres
+  participant DOC as Servicio de documentos
+  participant S3 as S3 documentos
+  C->>FE: Abre el link compartido
+  FE->>BE: Pide el cuestionario
+  BE->>DB: Carga cuestionario del abogado
+  C->>FE: Responde páginas
+  FE->>BE: Envía respuestas
+  BE->>DOC: Pide generar el documento
+  DOC->>S3: Descarga la plantilla
+  DOC->>DOC: Rellena la plantilla + PDF con LibreOffice
+  DOC->>S3: Sube DOCX/PDF
+  DOC-->>BE: Links temporales
+  BE->>DB: Guarda solo nombres y links (respuestas NO)
+  BE-->>FE: Links
+  FE-->>C: Descarga
+</pre>
+      </div>
+      <p class="note">El paso 11 explica por qué hoy no existe un repositorio de documentos: las respuestas del cliente nunca se guardan.</p>
+    </section>
+
+    <section id="producto">
+      <h2>Mapa de producto actual</h2>
+      <div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  subgraph V["Visitante"]
+    H["Landing + planes"] --> R["Registro<br/>datos + plan"]
+    R -->|"pagado"| P["Widget Datafast"] --> SUB["Suscripción activada"]
+    R -->|"gratis / código donado"| SUB
+  end
+  subgraph A["Abogado"]
+    L["Login<br/>sesión única"] --> D["Dashboard<br/>workspaces y documentos"]
+    D --> Q["Constructor de cuestionario<br/>páginas · elementos · ítems<br/>~15 tipos de bloque"]
+    Q --> T{"Plantilla"}
+    T --> T1["Subir .docx"]
+    T --> T2["Editor online Markdown"]
+    ADD["Add-in Word<br/>inserta etiquetas Jinja"] -.-> T1
+    Q --> PR["Probar cuestionario"]
+    D --> SH["Compartir link"]
+    D --> ACC["Cuenta: perfil, suscripción,<br/>subcuentas operadoras"]
+  end
+  subgraph CL["Cliente final (anónimo)"]
+    QF["Responde cuestionario"] --> PAY["Bloque Pago<br/>placeholder"]
+    QF --> G["Genera documento"] --> DL["Descarga DOCX / PDF"]
+  end
+  subgraph M["Master: cuenta interna de Arupo"]
+    FAQ["FAQ y códigos de donación"]
+  end
+  SUB --> L
+  SH --> QF
+  PR --> G
+</pre>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>Persona</th><th>Qué hace</th><th>Qué mejorar en v2</th></tr></thead>
+        <tbody>
+          <tr><td>Abogado (admin)</td><td>Crea cuestionarios, plantillas y comparte links</td><td>Roles y permisos reforzados en el servidor</td></tr>
+          <tr><td>Operador</td><td>Subcuenta del abogado</td><td>Permisos finos</td></tr>
+          <tr><td>Master</td><td>Cuenta interna de Arupo: FAQ y códigos de donación</td><td>Panel de administración propio</td></tr>
+          <tr><td>Cliente final</td><td>Responde el cuestionario sin registrarse</td><td>Links por envío que expiran y se revocan</td></tr>
+          <tr><td>Cliente marca blanca</td><td>Plan "client app" sin descarga DOCX</td><td>El ocultamiento de DOCX hoy no funciona</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="deficiencias">
+      <h2>Deficiencias</h2>
+      <h3>Código y seguridad</h3>
+      <ul class="list">
+        <li><span class="sev crit">CRÍTICO</span><span>Vulnerabilidades de autenticación, autorización, manejo de secretos e infraestructura. Detalle en el documento privado para socios; se corrigen en F0.</span></li>
+        <li><span class="sev crit">CRÍTICO</span><span>No hay separación real entre clientes (organizaciones): los datos se agrupan solo por el email del workspace.</span></li>
+        <li><span class="sev high">ALTO</span><span>La base de datos cambia sola al arrancar la app (<code>synchronize: true</code>), sin migraciones.</span></li>
+        <li><span class="sev high">ALTO</span><span>Respuestas del cliente no persistidas; links guardados que expiran.</span></li>
+        <li><span class="sev high">ALTO</span><span>Conversión a PDF probablemente rota en master por Python 3.6 (el arreglo está solo en la rama <code>fix/python36-subprocess-compat</code>).</span></li>
+        <li><span class="sev high">ALTO</span><span>Tecnologías sin soporte en frontend, backend y servicio de documentos; hay que actualizarlas.</span></li>
+        <li><span class="sev med">MEDIO</span><span>Dos repositorios TypeORM concentran la lógica (1081 y 526 líneas); <code>any</code> por todos lados; ~40% de las rutas del frontend son demos de la plantilla Devias.</span></li>
+        <li><span class="sev med">MEDIO</span><span>Árboles <code>ShowQuestions</code> duplicados (~1800 líneas cada uno) que ya divergieron; los tipos de bloque se comparan por texto en español.</span></li>
+        <li><span class="sev med">MEDIO</span><span><code>getMasterWeb</code> carga todo el árbol del usuario en cada pantalla, sin paginación.</span></li>
+      </ul>
+      <h3>Procesos</h3>
+      <ul class="list">
+        <li><span class="sev crit">CRÍTICO</span><span>Push a main despliega directo a producción sin tests ni lint (1 test en backend, 2 en documentos, 0 en frontend y add-in).</span></li>
+        <li><span class="sev high">ALTO</span><span>Sin infraestructura como código; cambios por consola, CLI y scripts manuales que se desalinean.</span></li>
+        <li><span class="sev high">ALTO</span><span>Sin staging real para los servicios en EB; staging del backend en Railway, otro proveedor.</span></li>
+        <li><span class="sev high">ALTO</span><span>Manejo de datos de producción y política de backups a reforzar.</span></li>
+        <li><span class="sev med">MEDIO</span><span>Observabilidad solo con logs en stdout; sin alarmas, métricas ni trazas.</span></li>
+        <li><span class="sev med">MEDIO</span><span>Variables de entorno cargadas a mano en la consola de EB; recursos ociosos que cuestan dinero.</span></li>
+      </ul>
+    </section>
+
+    <section id="conservar">
+      <h2>Qué funciona bien y conviene conservar</h2>
+      <div class="grid2">
+        <div class="panel">
+          <h3><span class="sev ok">PRODUCTO</span></h3>
+          <ul>
+            <li>Modelo de cuestionario: documento → página → elemento → ítem → subítem, con condicionales, repetición y cálculos.</li>
+            <li>Catálogo de formatos del add-in: fechas en español, números en letras, moneda, tablas con sumas. Es propiedad intelectual real.</li>
+            <li>Flujo completo cuestionario → pago → documento, que casi nadie ofrece en español.</li>
+            <li>Subcuentas operadoras, códigos de donación, marca blanca, sesión única.</li>
+            <li>Guías, tutoriales y FAQ dentro de la app.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3><span class="sev ok">TÉCNICO</span></h3>
+          <ul>
+            <li>Estructura por caso de uso (DTO, UseCase, Controller) con <code>Result</code>/<code>Either</code> y value objects: buena base hexagonal.</li>
+            <li>Eventos de dominio que disparan notificaciones.</li>
+            <li>Sesiones en Redis revocables.</li>
+            <li>Servicio de documentos sin estado con contrato claro: plantilla + contexto → archivos en S3.</li>
+            <li>Links de descarga de 90 s y descarga directa desde S3.</li>
+            <li>Auditoría completa de llamadas de pago (<code>PaymentTracking</code>).</li>
+            <li>Despliegue automático en los 4 repos.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="mercado">
+      <h2>Competencia</h2>
+      <p>El mercado se parte en dos: CLM empresarial en inglés a precio de decenas de miles de dólares al año, y automatización para estudios pequeños casi solo en inglés. Los jugadores latinoamericanos apuntan a empresas medianas y grandes.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Producto</th><th>Cliente</th><th>Fuerte en</th><th>IA</th><th>Precio</th><th>Español</th></tr></thead>
+        <tbody>
+          <tr><td>Bigle Legal (ES)</td><td>Corporativos, estudios, notarías</td><td>CLM, firma propia, integraciones</td><td>Libra 2.0</td><td>No público</td><td>Sí</td></tr>
+          <tr><td>Juro</td><td>In-house scale-ups</td><td>Plantillas, repositorio, aprobaciones</td><td>Asistente, revisión</td><td>~$12k–132k/año (terceros)</td><td>No</td></tr>
+          <tr><td>Ironclad</td><td>Enterprise</td><td>Ciclo completo, integración Word</td><td>Jurist</td><td>~$30k–150k+/año (terceros)</td><td>No</td></tr>
+          <tr><td>Contractbook</td><td>Mid-market</td><td>Repositorio, renovaciones, firma eIDAS</td><td>Extracción</td><td>Por niveles, versión gratis</td><td>No</td></tr>
+          <tr><td>Spellbook</td><td>Estudios, in-house</td><td>Add-in Word con IA</td><td>Producto central</td><td>No público</td><td>No verificado</td></tr>
+          <tr><td>Gavel</td><td>Estudios pequeños</td><td>Cuestionarios, pagos Stripe, Word/PDF</td><td>No visible</td><td>$83–417/mes</td><td>No</td></tr>
+          <tr><td>Legalario (MX)</td><td>Enterprise</td><td>Firma NOM-151, CLM, KYC</td><td>Extracción y creación</td><td>No público</td><td>Sí</td></tr>
+          <tr><td>Webdox (CL)</td><td>Enterprise, 12 países</td><td>CLM con legislación local</td><td>Extracción, cláusulas</td><td>No público</td><td>Sí</td></tr>
+          <tr><td>Lemontech (LatAm)</td><td>Estudios e in-house</td><td>Gestión de estudio, facturación de horas</td><td>Captura de tiempo</td><td>No público</td><td>Sí</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">No se pudieron verificar Clio Draft, PandaDoc ni HotDocs (sitios bloquearon el acceso). Los 8 pilares de Bigle están confirmados por una captura de su sitio (ver sección siguiente). Precios de Juro, Ironclad y DocuSign son estimaciones de terceros.</p>
+      <div class="panel">
+        <h3>Hueco de mercado</h3>
+        <p>No apareció ningún producto en español para estudios pequeños que combine cuestionario + plantilla Word + cobro al cliente + repositorio liviano con IA, a precio de $20–100/mes. Es una inferencia de una búsqueda acotada, no una ausencia demostrada.</p>
+      </div>
+    </section>
+
+    <section id="pilares">
+      <h2>Los 8 pilares que debe cubrir la v2</h2>
+      <p>Alcance funcional de referencia para la v2, tomado de los 8 pilares que publica Bigle Legal. La diferencia de Arupo: en español, para estudios pequeños y pymes de LatAm, a precio accesible y con IA en cada pilar.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Pilar</th><th>Qué significa</th><th>Arupo v1 hoy</th><th>Qué agrega la v2</th><th>IA</th><th>Fase</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1 Automatiza</strong></td><td>Convertir plantillas en formularios fáciles de mantener</td><td><span class="sev ok">SÍ</span> Cuestionario + plantilla + add-in Word</td><td>Versionado de plantillas, tipos de bloque por código (no por texto), plantilla Word sin etiquetas manuales</td><td>Subir un contrato y que la IA proponga variables y cuestionario</td><td>F1 · F3</td></tr>
+          <tr><td><strong>2 Crea</strong></td><td>Completar un formulario y generar el documento en un clic, al propio ritmo</td><td><span class="sev med">PARCIAL</span> Genera DOCX/PDF, pero no guarda progreso ni respuestas</td><td>Borradores que se retoman, respuestas guardadas, regenerar desde respuestas</td><td>Asistente que ayuda a responder y valida coherencia</td><td>F1</td></tr>
+          <tr><td><strong>3 Clasifica</strong></td><td>Metadatos propios, carpetas, metadatos que se llenan solos, búsqueda avanzada</td><td><span class="sev crit">NO</span> Solo workspaces</td><td>Esquema de metadatos por organización, carpetas, metadatos tomados de las respuestas, búsqueda del lado del servidor</td><td>Extraer partes, fechas y montos de documentos subidos</td><td>F2 · F3</td></tr>
+          <tr><td><strong>4 Revisa y comparte</strong></td><td>Enviar formulario al cliente; mandar el documento a superiores y recibir aviso al terminar</td><td><span class="sev med">PARCIAL</span> Link al cliente, inseguro; sin revisión interna ni avisos</td><td>Links por envío que expiran, flujo de revisión y aprobación interna, notificaciones por email y en app</td><td>Resumen del documento para quien revisa</td><td>F1 · F2</td></tr>
+          <tr><td><strong>5 Negocia</strong></td><td>Enviar a terceros, control de cambios, aceptar o rechazar sugerencias, trazabilidad de versiones</td><td><span class="sev crit">NO</span></td><td>Portal de contraparte, versiones, comentarios, control de cambios, historial completo</td><td>Explicar qué cambió la contraparte y marcar cláusulas riesgosas</td><td>F4</td></tr>
+          <tr><td><strong>6 Firma digitalmente</strong></td><td>Firma electrónica nativa, sin imprimir ni reunirse</td><td><span class="sev med">PARCIAL</span> Firma dibujada en canvas; integración Uanataca en POC bloqueado</td><td>Firma simple con rastro de auditoría y firma acreditada para Ecuador</td><td>—</td><td>F4</td></tr>
+          <tr><td><strong>7 Guarda</strong></td><td>Almacenamiento automático y seguro en la nube, búsqueda instantánea</td><td><span class="sev crit">NO</span> Solo nombres de archivo y links que expiran</td><td>Todo documento generado o firmado queda guardado por organización, con versiones</td><td>Búsqueda en lenguaje natural sobre los documentos</td><td>F1 · F2</td></tr>
+          <tr><td><strong>8 Gestiona</strong></td><td>Paneles propios de seguimiento y alertas de obligaciones, riesgos y renovaciones</td><td><span class="sev med">PARCIAL</span> Dashboard con estadísticas básicas</td><td>Paneles configurables, vencimientos, alertas por email y WhatsApp</td><td>Detectar obligaciones y fechas clave automáticamente</td><td>F3</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="opensource">
+      <h2>Open source: qué tomar</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Proyecto</th><th>Licencia</th><th>Uso recomendado</th><th>Para qué</th></tr></thead>
+        <tbody>
+          <tr><td>docassemble</td><td>MIT</td><td>Copiar ideas</td><td>Cuestionarios declarativos (YAML), resolución pregunta → variable → documento, Assembly Line. No como núcleo: stack propio, sin multi-tenencia, UI anticuada.</td></tr>
+          <tr><td>Gotenberg</td><td>MIT</td><td>Integrar como servicio</td><td>DOCX → PDF con LibreOffice detrás de una API; reemplaza la conversión del servicio Flask.</td></tr>
+          <tr><td>Docling</td><td>MIT</td><td>Integrar como servicio</td><td>Leer contratos subidos (estructura, tablas) para extracción con IA.</td></tr>
+          <tr><td>OpenContracts</td><td>MIT</td><td>Referencia de diseño</td><td>Extracción estructurada, anotaciones, búsqueda con IA con citas al texto.</td></tr>
+          <tr><td>docx-templates</td><td>MIT</td><td>Evaluar</td><td>Plantillas DOCX en Node; requiere sandbox para plantillas de usuarios.</td></tr>
+          <tr><td>Documenso / OpenSign</td><td>AGPL-3.0</td><td>Evitar en el núcleo</td><td>Firma electrónica; la AGPL puede obligar a publicar código en un SaaS. Consultar abogado o usar API paga.</td></tr>
+          <tr><td>Paperless-ngx, LexNLP, Carbone</td><td>GPL / AGPL / restrictiva</td><td>Evitar</td><td>Licencia, mantenimiento o cláusula anti-SaaS.</td></tr>
+          <tr><td>"OpenCLM"</td><td>—</td><td>No verificable</td><td>Solo aparece en un listado de marketing, sin repositorio.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="rumbo">
+      <h2>Rumbo propuesto para la nueva versión</h2>
+      <p>Borrador para discutir, no una decisión. La tesis: <strong>los 8 pilares de un CLM completo, en español, para estudios pequeños y pymes de LatAm, con IA en cada pilar y a precio LatAm</strong>. El orden de las fases sigue el valor: primero que cada documento quede guardado y clasificado (lo que hoy falta), después la IA, y al final negociación y firma, que son los pilares más costosos de construir.</p>
+      <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  subgraph IN["Entrada"]
+    UP["Contrato existente<br/>.docx / .pdf"]
+    TPL["Plantilla Word<br/>add-in"]
+  end
+  subgraph CORE["Arupo"]
+    AI1["1·IA propone variables<br/>y cuestionario"]
+    QB["1·Constructor de<br/>cuestionario"]
+    LNK["4·Link seguro por envío<br/>expira y se revoca"]
+    SUBM["2·Envío del cliente<br/>borrador y respuestas guardadas"]
+    GEN["2·Generación<br/>sandbox + Gotenberg"]
+    REP["7·Guarda + 3·Clasifica<br/>metadatos, carpetas,<br/>búsqueda, versiones"]
+    AI2["3·IA extrae partes,<br/>fechas, montos"]
+    ALR["8·Alertas de obligaciones<br/>y renovaciones"]
+  end
+  subgraph OUT["Salida"]
+    DLS["DOCX / PDF"]
+    PAY["Cobro al cliente"]
+    REV["4·Revisión interna<br/>y notificaciones"]
+    NEG["5·Negociación<br/>con terceros"]
+    SIG["6·Firma digital"]
+    DSH["8·Paneles"]
+  end
+  UP --> AI1 --> QB
+  TPL --> QB
+  QB --> LNK --> SUBM --> GEN --> REP
+  SUBM --> PAY
+  GEN --> DLS
+  GEN --> REV --> NEG --> SIG --> REP
+  UP --> AI2 --> REP
+  REP --> ALR --> DSH
+</pre>
+      </div>
+      <div class="panel">
+        <div class="phase"><span class="tag">F0</span><div><h3>Contener producción (ya, en la v1)</h3><ul>
+          <li>Corregir las vulnerabilidades críticas identificadas (detalle en el documento privado).</li>
+          <li>Rotar credenciales y moverlas a un gestor de secretos.</li>
+          <li>Reforzar la configuración de red de la base de datos y de los servicios.</li>
+        </ul></div></div>
+        <div class="phase"><span class="tag">F1</span><div><h3>Fundamentos · pilares 1, 2, 4 y 7</h3><ul>
+          <li>Organización como tenant real (<code>organization_id</code> con claves foráneas), migraciones, control de dueño en cada consulta.</li>
+          <li><strong>Automatiza:</strong> tipos de bloque por código, versionado de plantillas, generación con sandbox + Gotenberg.</li>
+          <li><strong>Crea:</strong> entidad <code>Submission</code> con respuestas en jsonb y borradores que el cliente retoma.</li>
+          <li><strong>Revisa y comparte:</strong> links por envío que expiran y se pueden revocar.</li>
+          <li><strong>Guarda:</strong> <code>GeneratedDocument</code> con clave S3 por organización; todo documento queda guardado.</li>
+          <li>Infraestructura como código, OIDC para GitHub Actions, Secrets Manager, staging en AWS, tests como compuerta de deploy.</li>
+        </ul></div></div>
+        <div class="phase"><span class="tag">F2</span><div><h3>Organizar y colaborar · pilares 3, 4 y 7</h3><ul>
+          <li><strong>Clasifica:</strong> esquema de metadatos por organización, carpetas, metadatos que se llenan desde las respuestas.</li>
+          <li><strong>Guarda:</strong> búsqueda avanzada del lado del servidor, versiones, regeneración desde respuestas.</li>
+          <li><strong>Revisa y comparte:</strong> envío a revisión interna, aprobación y notificaciones.</li>
+          <li>Cobro real en el cuestionario, confirmado por webhook del procesador, no por el navegador.</li>
+        </ul></div></div>
+        <div class="phase"><span class="tag">F3</span><div><h3>IA y gestión · pilares 1, 3 y 8</h3><ul>
+          <li><strong>Automatiza:</strong> subir un contrato existente y que la IA proponga variables y cuestionario (la idea del POC, sobre la base nueva).</li>
+          <li><strong>Clasifica:</strong> extracción de partes, fechas y montos en español que llena los metadatos sola.</li>
+          <li><strong>Gestiona:</strong> paneles configurables y alertas de obligaciones, riesgos y renovaciones.</li>
+          <li>Biblioteca de cláusulas y plantillas ecuatorianas.</li>
+        </ul></div></div>
+        <div class="phase"><span class="tag">F4</span><div><h3>Negociar y firmar · pilares 5 y 6</h3><ul>
+          <li><strong>Negocia:</strong> portal para la contraparte, comentarios, control de cambios, aceptar o rechazar sugerencias, historial de versiones; IA que resume los cambios.</li>
+          <li><strong>Firma digitalmente:</strong> firma simple con rastro de auditoría y firma acreditada para Ecuador (retomando el POC de Uanataca).</li>
+          <li>WhatsApp para enviar links, recordatorios y firmas.</li>
+        </ul></div></div>
+      </div>
+    </section>
+
+    <section id="preguntas">
+      <h2>Decisiones abiertas</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Decisión</th><th>Por qué importa</th></tr></thead>
+        <tbody>
+          <tr><td>Cliente objetivo principal: estudios pequeños, pymes o ambos</td><td>Define precio, onboarding y si el repositorio o el cuestionario va primero.</td></tr>
+          <tr><td>Orden de los 8 pilares</td><td>La propuesta deja Negocia y Firma para F4 por costo; si la firma es lo que más venden los clientes, conviene adelantarla.</td></tr>
+          <tr><td>Evolucionar el código v1 o reconstruir con el mismo modelo de dominio</td><td>El frontend es una plantilla con 40% de demos y dependencias sin soporte; el backend tiene buena estructura pero tenencia rota.</td></tr>
+          <tr><td>Seguir en Elastic Beanstalk o pasar a ECS Fargate / contenedores</td><td>Afecta infraestructura como código, colas para generación y costos.</td></tr>
+          <tr><td>Procesador de pagos: Datafast o Nuvei</td><td>En main solo existe Datafast; había documentación de Nuvei en el archivo.</td></tr>
+          <tr><td>Proveedor de IA y dónde viven los datos</td><td>Confidencialidad de documentos legales y costo por documento.</td></tr>
+          <tr><td>De dónde salió "OpenCLM"</td><td>No se encontró un proyecto verificable con ese nombre.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:"neutral"});</script>
+</body>
+</html>
